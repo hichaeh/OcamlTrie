@@ -1,0 +1,12 @@
+opam-version: "2.0"
+maintainer: "hichem.rami.aitelhara@gmail.com"
+authors: [ "Hichem Rami AIT EL HARA" ]
+license: "MIT"
+depends: [
+  "ocaml" {>= "4.08.0"} 
+  "dune" { build & >= "1.7" }
+]
+build: [
+  [ "dune" "build" "-p" name "-j" jobs ]
+]
+synopsis: "Ocaml Trie"
