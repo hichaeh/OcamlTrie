@@ -185,7 +185,8 @@ let get_combs pool trie =
         | Some (Leaf_dt (ECell _)) -> 
           (List.rev (h::pref))::(rec_on_tree pool tree pref t)
         | _ -> rec_on_tree pool tree pref t)
-      | _ -> assert false 
+      | Leaf_dt (ECell _) -> List.rev pref::[]
+      | Leaf_dt (Cell _) -> assert false
       )
     | [] -> []
   in
@@ -193,6 +194,13 @@ let get_combs pool trie =
     match uniq with  
     | h::t -> (
       match (get_tree_from_tl h treelist) with 
+      | Some (Leaf_dt (ECell _)) -> 
+        [h]::rec_on_treelist pool treelist t
+      | Some ((Node_dt (ECell _, _)) as tree) -> 
+        let new_pool = rm_elem h pool in 
+        let new_uniq = List.sort_uniq compare new_pool in
+          [h]::(rec_on_tree new_pool tree (h::[]) new_uniq) 
+          @ (rec_on_treelist pool treelist t) 
       | Some tree -> 
         let new_pool = rm_elem h pool in 
         let new_uniq = List.sort_uniq compare new_pool in
