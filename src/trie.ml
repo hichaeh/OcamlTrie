@@ -171,19 +171,19 @@ let get_combs pool trie =
       match tree with
       | Node_dt (_, l) -> (
         match get_tree_from_tl h l with
-        | Some (Node_dt (ECell _, cl)) -> (
+        | Some (Node_dt (ECell _, _) as subtree) -> (
           let new_pool = rm_elem h pool in
           let new_uniq = List.sort_uniq compare new_pool in 
-            (List.rev (h::pref))::
-            (rec_on_tree new_pool (Node_dt (ECell h, cl)) (h::pref) new_uniq)
-            @ (rec_on_tree pool tree pref t))
-        | Some (Node_dt (Cell _, cl)) -> ( 
+            List.rev (h::pref)::
+            rec_on_tree new_pool subtree (h::pref) new_uniq
+            @ rec_on_tree pool tree pref t)
+        | Some (Node_dt (Cell _, _) as subtree) -> ( 
           let new_pool = rm_elem h pool in
           let new_uniq = List.sort_uniq compare new_pool in 
-            (rec_on_tree new_pool (Node_dt (ECell h, cl)) (h::pref) new_uniq)
-            @ (rec_on_tree pool tree pref t))
+            rec_on_tree new_pool subtree (h::pref) new_uniq
+            @ rec_on_tree pool tree pref t)
         | Some (Leaf_dt (ECell _)) -> 
-          (List.rev (h::pref))::(rec_on_tree pool tree pref t)
+          List.rev (h::pref)::rec_on_tree pool tree pref t
         | _ -> rec_on_tree pool tree pref t)
       | Leaf_dt (ECell _) -> List.rev pref::[]
       | Leaf_dt (Cell _) -> assert false
@@ -199,13 +199,13 @@ let get_combs pool trie =
       | Some ((Node_dt (ECell _, _)) as tree) -> 
         let new_pool = rm_elem h pool in 
         let new_uniq = List.sort_uniq compare new_pool in
-          [h]::(rec_on_tree new_pool tree (h::[]) new_uniq) 
-          @ (rec_on_treelist pool treelist t) 
+          [h]::rec_on_tree new_pool tree (h::[]) new_uniq 
+          @ rec_on_treelist pool treelist t
       | Some tree -> 
         let new_pool = rm_elem h pool in 
         let new_uniq = List.sort_uniq compare new_pool in
-          (rec_on_tree new_pool tree (h::[]) new_uniq) 
-          @ (rec_on_treelist pool treelist t) 
+          rec_on_tree new_pool tree (h::[]) new_uniq 
+          @ rec_on_treelist pool treelist t
       | None -> rec_on_treelist pool treelist t)
     | [] -> []
   in
