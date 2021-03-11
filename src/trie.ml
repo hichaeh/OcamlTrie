@@ -12,7 +12,7 @@ module type T = sig
   val add_vl : t -> v list -> t
   val mem_vl : t -> v list -> bool
   val rm_vl : t -> v list -> t
-  val get_combs : v list -> t -> (v list) list 
+  val get_combs : t -> v list -> (v list) list 
 end
 
 module Make (V : OrderedType) = 
@@ -183,7 +183,7 @@ module Make (V : OrderedType) =
 
 
 
-  let get_combs (pool : v list) (dtf : t ) =
+  let get_combs (dtf : t ) (pool : v list) =
     let rec rec_on_tree pool tree pref uniq =
       match uniq with
       | h :: t -> (
@@ -234,5 +234,5 @@ module Make (V : OrderedType) =
       let uniq = List.sort_uniq compare pool in
       rec_on_treelist pool dtf uniq
   (**)
-  
+
 end)
