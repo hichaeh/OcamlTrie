@@ -9,9 +9,12 @@ module type T = sig
   type v 
   type t 
   val empty : unit -> t
+  val is_empty : t -> bool
   val add : t -> v list -> t
   val mem : t -> v list -> bool
   val rm : t -> v list -> t
+  (* val is_subtree : t -> t -> bool *)
+  (* val update : t -> v list -> v list -> t *)
   val get_combs : t -> v list -> (v list) list 
 end
 
@@ -27,8 +30,13 @@ module Make (V : OrderedType) =
 
   type t = tt list
 
-  let empty () = []
+  let empty () : tt list = []
   
+  let is_empty (dtf : t) : bool = 
+    match dtf with 
+    | [] -> true 
+    | _ -> false 
+
   let rec get_tree_from_tl (v: v) (dtl: t) : tt option = 
     match dtl with
     | h :: t -> (
@@ -59,7 +67,7 @@ module Make (V : OrderedType) =
   let add (dtf : t) (vlist : v list) : t =
       let rec radd (tl : t) (vlh : v) (vlt : v list) =
         match tl with
-        | Node_dt (cv, stl) :: tlt | ENode_dt (cv, stl) :: tlt  -> (
+        | Node_dt (cv, stl) :: tlt ->  (
             match vlh > cv with 
             | true -> Node_dt (cv, stl) :: radd tlt vlh vlt
             | false -> 
@@ -68,15 +76,24 @@ module Make (V : OrderedType) =
                 | true, false -> Node_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
                 | false, true -> Leaf_dt (vlh) :: Node_dt (cv, stl) :: tlt
                 | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: Node_dt (cv, stl) :: tlt )
+        | ENode_dt (cv, stl) :: tlt  -> (
+            match vlh > cv with 
+            | true -> ENode_dt (cv, stl) :: radd tlt vlh vlt
+            | false -> 
+                match vlh = cv, vlt = [] with 
+                | true, true -> ENode_dt (vlh, stl) :: tlt
+                | true, false -> ENode_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
+                | false, true -> Leaf_dt (vlh) :: tl
+                | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl )
         | Leaf_dt cv :: tlt -> (
             match vlh > cv with 
             | true -> Leaf_dt cv :: radd tlt vlh vlt
             | false ->
                 match vlh = cv, vlt = [] with 
-                | true, true -> [Leaf_dt (vlh)]
-                | true, false -> Node_dt (cv, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
-                | false, true -> Leaf_dt (vlh) :: [Leaf_dt cv]
-                | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)):: Leaf_dt cv :: tlt )
+                | true, true -> Leaf_dt (vlh) :: tlt
+                | true, false -> ENode_dt (cv, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
+                | false, true -> Leaf_dt (vlh) :: tl
+                | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)):: tl )
         | [] -> (
           match vlt = [] with
           | true -> [Leaf_dt (vlh)]
