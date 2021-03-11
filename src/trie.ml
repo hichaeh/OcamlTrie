@@ -50,10 +50,6 @@ module Make (V : OrderedType) =
     | _ -> None 
   (**)
 
-  let get_tree c t : tt option  = 
-    get_tree_from_tl c t
-  (**)
-
   let rec rm_elem elem = function
     | h :: t -> (
       match h = elem with 
@@ -102,32 +98,47 @@ module Make (V : OrderedType) =
       match vlist with 
       | vlh :: vlt -> radd dtf vlh vlt
       | _ -> dtf 
-
   (**)
 
-  let mem (trie : t) (cl : v list) : bool =
-    let rec mem_l_rec cl tree =
-      match cl with
-      | [h] -> (
-          match tree with
-          | ENode_dt (c, _) -> h = c
-          | Leaf_dt c -> h = c
-          | _ -> false )
-      | h1 :: h2 :: t -> (
-          match tree with
-          | Node_dt (c, l) when c = h1 -> (
-              match get_tree_from_tl h2 l with
-              | Some x -> mem_l_rec (h2 :: t) x
-              | None -> false )
-          | _ -> false )
-      | [] -> true
-    in
-    match cl with
-    | h :: _ -> (
-        match get_tree h trie with 
-        | Some x -> mem_l_rec cl x 
-        | None -> false )
-    | [] -> true
+
+  let mem (dtf : t) (vl : v list) : bool =
+    let rec rmem (tl : t) (vlh : v) (vlt : v list) : bool =  
+      match tl with 
+      | Node_dt (c, stl) :: tlt -> (
+          match c = vlh with
+          | true -> (
+              match vlt with
+              | h :: t -> rmem stl h t
+              | [] -> false)
+          | false ->
+              match vlh > c with
+              | true -> rmem tlt vlh vlt
+              | false -> false)
+      | ENode_dt (c, stl) :: tlt -> (
+          match c = vlh with 
+          | true -> (
+              match vlt with
+              | h :: t -> rmem stl h t
+              | [] -> true)
+          | false -> 
+              match vlh > c with
+              | true -> rmem tlt vlh vlt
+              | false -> false) 
+      | Leaf_dt c :: tlt -> (
+          match c = vlh with 
+          | true -> (
+              match vlt with
+              | [] -> true
+              | _ -> false)
+          | false -> 
+              match vlh > c with
+              | true -> rmem tlt vlh vlt
+              | false -> false) 
+      | [] -> false 
+    in 
+    match vl with 
+    | h :: t -> rmem dtf h t
+    | _ -> true 
   (**)
 
   let rm (dtf : t)  (vl : v list) : t = 
