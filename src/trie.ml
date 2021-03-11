@@ -1,21 +1,23 @@
 
+(* 
+module type Comparable = sig
+  type t
+  val compare : t -> t -> int
+end
+*)
 
-type 'a dtree =
-  | ENode_dt of 'a * 'a dtree list
-  | Node_dt of 'a * 'a dtree list
+
+type 'a tt =
+  | ENode_dt of 'a * 'a tt list
+  | Node_dt of 'a * 'a tt list
   | Leaf_dt of 'a
 
+type 'a t = 'a tt list
+
+let empty_trie () = []
 (**)
 
-(* A Trie is represented as a list of trees *)
-type 'a trie = Trie of 'a dtree list
-
-(**)
-
-let empty_trie () = Trie []
-(**)
-
-let rec get_tree_from_tl (v: 'a) (dtl: 'a dtree list) : 'a dtree option = 
+let rec get_tree_from_tl (v: 'a) (dtl: 'a t) : 'a tt option = 
   match dtl with
   | h :: t -> (
     match h with Node_dt (c, _) | ENode_dt (c, _) | Leaf_dt c ->  
@@ -28,12 +30,12 @@ let rec get_tree_from_tl (v: 'a) (dtl: 'a dtree list) : 'a dtree option =
   | _ -> None 
 (**)
 
-let get_tree c t : 'a dtree option  = 
-  match t with Trie l -> get_tree_from_tl c l
+let get_tree c t : 'a tt option  = 
+  get_tree_from_tl c t
 
 (**)
-let add_vl (dtf : 'a trie) (vlist : 'a list) : 'a trie =
-    let rec radd (tl : 'a dtree list) (vlh : 'a) (vlt : 'a list) =
+let add_vl (dtf : 'a t) (vlist : 'a list) : 'a t =
+    let rec radd (tl : 'a t) (vlh : 'a) (vlt : 'a list) =
       match tl with
       | Node_dt (cv, stl) :: tlt | ENode_dt (cv, stl) :: tlt  -> (
           match vlh > cv with 
@@ -58,8 +60,8 @@ let add_vl (dtf : 'a trie) (vlist : 'a list) : 'a trie =
         | true -> [Leaf_dt (vlh)]
         | false -> [Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt))])
     in
-    match dtf, vlist with 
-    | Trie tl, vlh :: vlt -> Trie (radd tl vlh vlt) 
+    match vlist with 
+    | vlh :: vlt -> radd dtf vlh vlt
     | _ -> dtf 
 
 (**)
@@ -73,7 +75,7 @@ let rec rm_elem elem = function
   | [] -> []
 (**)
 
-let mem_vl (trie : 'a trie) (cl : 'a list) : bool =
+let mem_vl (trie : 'a t) (cl : 'a list) : bool =
   let rec mem_l_rec cl tree =
     match cl with
     | [h] -> (
@@ -98,8 +100,8 @@ let mem_vl (trie : 'a trie) (cl : 'a list) : bool =
   | [] -> true
 (**)
 
-let rm_vl (dtf : 'a trie)  (vl : 'a list) : 'a trie = 
-  let rec rrm (tl : 'a dtree list) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : 'a) (vlt : 'a list) : 'a dtree list * int list option = 
+let rm_vl (dtf : 'a t)  (vl : 'a list) : 'a t = 
+  let rec rrm (tl : 'a t) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : 'a) (vlt : 'a list) : 'a t * int list option = 
     match tl with 
     | Node_dt (c, stl) :: tlt -> (
       match vlh = c with 
@@ -161,8 +163,8 @@ let rm_vl (dtf : 'a trie)  (vl : 'a list) : 'a trie =
     )
     | [] -> assert false 
   in 
-    match dtf, vl with 
-    | Trie trl, vlh::vlt -> Trie (fst (rrm trl vlh vlt))
+    match vl with 
+    | vlh::vlt -> (fst (rrm dtf vlh vlt))
     | _ -> dtf
 
 
@@ -172,7 +174,7 @@ let rm_vl (dtf : 'a trie)  (vl : 'a list) : 'a trie =
 
 (* Given a list of elements (the pool) and a trie 
  * Returns a list of every possible combination from the trie *)
-let get_combs pool trie =
+let get_combs pool dtf =
   let rec rec_on_tree pool tree pref uniq =
     match uniq with
     | h :: t -> (
@@ -220,8 +222,5 @@ let get_combs pool trie =
     | [] ->
       []
   in
-  match trie with
-  | Trie [] -> []
-  | Trie l ->
     let uniq = List.sort_uniq compare pool in
-    rec_on_treelist pool l uniq
+    rec_on_treelist pool dtf uniq
