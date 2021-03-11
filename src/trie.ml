@@ -8,10 +8,10 @@ module type OrderedType =
 module type T = sig
   type v 
   type t 
-  val empty_trie : unit -> t
-  val add_vl : t -> v list -> t
-  val mem_vl : t -> v list -> bool
-  val rm_vl : t -> v list -> t
+  val empty : unit -> t
+  val add : t -> v list -> t
+  val mem : t -> v list -> bool
+  val rm : t -> v list -> t
   val get_combs : t -> v list -> (v list) list 
 end
 
@@ -27,7 +27,7 @@ module Make (V : OrderedType) =
 
   type t = tt list
 
-  let empty_trie () = []
+  let empty () = []
   
   let rec get_tree_from_tl (v: v) (dtl: t) : tt option = 
     match dtl with
@@ -56,7 +56,7 @@ module Make (V : OrderedType) =
   (**)
 
 
-  let add_vl (dtf : t) (vlist : v list) : t =
+  let add (dtf : t) (vlist : v list) : t =
       let rec radd (tl : t) (vlh : v) (vlt : v list) =
         match tl with
         | Node_dt (cv, stl) :: tlt | ENode_dt (cv, stl) :: tlt  -> (
@@ -88,7 +88,7 @@ module Make (V : OrderedType) =
 
   (**)
 
-  let mem_vl (trie : t) (cl : v list) : bool =
+  let mem (trie : t) (cl : v list) : bool =
     let rec mem_l_rec cl tree =
       match cl with
       | [h] -> (
@@ -113,7 +113,7 @@ module Make (V : OrderedType) =
     | [] -> true
   (**)
 
-  let rm_vl (dtf : t)  (vl : v list) : t = 
+  let rm (dtf : t)  (vl : v list) : t = 
     let rec rrm (tl : t) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : v) (vlt : v list) : t * int list option = 
       match tl with 
       | Node_dt (c, stl) :: tlt -> (
