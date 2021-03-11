@@ -1,96 +1,89 @@
-(* ECell: End of a word *)
-type 'a dt_cell = Cell of 'a | ECell of 'a
 
-(* The subtrees are put, sorted, in a list 
- * A node holds a cell and a list of subtrees
- * A leaf holds only a cell*)
-type 'a t_tree =
-  | Node_dt of 'a dt_cell * 'a t_tree list
-  | Leaf_dt of 'a dt_cell
+
+type 'a dtree =
+  | ENode_dt of 'a * 'a dtree list
+  | Node_dt of 'a * 'a dtree list
+  | Leaf_dt of 'a
 
 (**)
 
 (* A Trie is represented as a list of trees *)
-type 'a trie = Trie of 'a t_tree list
+type 'a trie = Trie of 'a dtree list
 
 (**)
 
 let empty_trie () = Trie []
+(**)
+
+let rec get_tree_from_tl (v: 'a) (dtl: 'a dtree list) : 'a dtree option = 
+  match dtl with
+  | h :: t -> (
+    match h with Node_dt (c, _) | ENode_dt (c, _) | Leaf_dt c ->  
+      match v = c with 
+      | true -> Some h
+      | false ->
+          match v > c with 
+          | true -> get_tree_from_tl c t
+          | false -> None )
+  | _ -> None 
+(**)
+
+let get_tree c t : 'a dtree option  = 
+  match t with Trie l -> get_tree_from_tl c l
+
+(**)
+let add_vl (dtf : 'a trie) (vlist : 'a list) : 'a trie =
+    let rec radd (tl : 'a dtree list) (vlh : 'a) (vlt : 'a list) =
+      match tl with
+      | Node_dt (cv, stl) :: tlt | ENode_dt (cv, stl) :: tlt  -> (
+          match vlh > cv with 
+          | true -> Node_dt (cv, stl) :: radd tlt vlh vlt
+          | false -> 
+              match vlh = cv, vlt = [] with 
+              | true, true -> ENode_dt (vlh, stl) :: tlt
+              | true, false -> Node_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
+              | false, true -> Leaf_dt (vlh) :: Node_dt (cv, stl) :: tlt
+              | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: Node_dt (cv, stl) :: tlt )
+      | Leaf_dt cv :: tlt -> (
+          match vlh > cv with 
+          | true -> Leaf_dt cv :: radd tlt vlh vlt
+          | false ->
+              match vlh = cv, vlt = [] with 
+              | true, true -> [Leaf_dt (vlh)]
+              | true, false -> Node_dt (cv, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
+              | false, true -> Leaf_dt (vlh) :: [Leaf_dt cv]
+              | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)):: Leaf_dt cv :: tlt )
+      | [] -> (
+        match vlt = [] with
+        | true -> [Leaf_dt (vlh)]
+        | false -> [Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt))])
+    in
+    match dtf, vlist with 
+    | Trie tl, vlh :: vlt -> Trie (radd tl vlh vlt) 
+    | _ -> dtf 
 
 (**)
 
-let get_cell_value = function Cell c -> c | ECell c -> c
-
+let rec rm_elem elem = function
+  | h :: t -> (
+    match h = elem with 
+    | true -> t
+    | false -> h :: rm_elem elem t
+  )
+  | [] -> []
 (**)
 
-let get_tree_head = function
-  | Node_dt (c, _) ->
-    get_cell_value c
-  | Leaf_dt c ->
-    get_cell_value c
-
-(**)
-
-let rec get_tree_from_tl c = function
-  | h :: _ when get_tree_head h = c ->
-    Some h
-  | h :: t when get_tree_head h < c ->
-    get_tree_from_tl c t
-  | _ ->
-    None
-
-(**)
-
-let get_tree c = function Trie l -> get_tree_from_tl c l
-
-(**)
-
-let add_vlist (dtf : 'a trie) (vlist : 'a list) : 'a trie =
-  let rec radd (tl : 'a t_tree list) (vlh : 'a) (vlt : 'a list) =
-    match tl with
-    | Node_dt (cell, stl) :: tlt -> (
-      let cv = get_cell_value cell in
-        match vlh > cv with 
-        | true -> Node_dt (cell, stl) :: radd tlt vlh vlt
-        | false -> 
-            match vlh = cv, vlt = [] with 
-            | true, true -> Node_dt (ECell vlh, stl) :: tlt
-            | true, false -> Node_dt (cell, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
-            | false, true -> Leaf_dt (ECell vlh) :: Node_dt (cell, stl) :: tlt
-            | false, false -> Node_dt (Cell vlh, radd [] (List.hd vlt) (List.tl vlt)) :: Node_dt (cell, stl) :: tlt )
-    | Leaf_dt cell :: tlt -> (
-      let cv = get_cell_value cell in
-        match vlh > cv with 
-        | true -> Leaf_dt cell :: radd tlt vlh vlt
-        | false ->
-            match vlh = cv, vlt = [] with 
-            | true, true -> Leaf_dt (ECell vlh) :: tlt
-            | true, false -> Node_dt (cell, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
-            | false, true -> Leaf_dt (ECell vlh) :: Leaf_dt cell :: tlt
-            | false, false -> Node_dt (Cell vlh, radd [] (List.hd vlt) (List.tl vlt)):: Leaf_dt cell :: tlt )
-    | [] -> (
-      match vlt = [] with
-      | true -> [Leaf_dt (ECell vlh)]
-      | false -> [Node_dt (Cell vlh, radd [] (List.hd vlt) (List.tl vlt))])
-  in
-  match dtf with
-  | Trie tl -> 
-      match vlist with 
-      | vlh :: vlt -> Trie (radd tl vlh vlt) 
-      | [] -> dtf 
-
-
-let mem_l cl trie =
+let mem_vl (trie : 'a trie) (cl : 'a list) : bool =
   let rec mem_l_rec cl tree =
     match cl with
     | [h] -> (
         match tree with
-        | Node_dt (ECell c, _) -> h = c
-        | Leaf_dt (ECell c) -> h = c
+        | ENode_dt (c, _) -> h = c
+        | Leaf_dt c -> h = c
         | _ -> false )
     | h1 :: h2 :: t -> (
         match tree with
-        | Node_dt (c, l) when get_cell_value c = h1 -> (
+        | Node_dt (c, l) when c = h1 -> (
             match get_tree_from_tl h2 l with
             | Some x -> mem_l_rec (h2 :: t) x
             | None -> false )
@@ -105,144 +98,77 @@ let mem_l cl trie =
   | [] -> true
 (**)
 
-
-let insert_str_tree str t_tree =
-  let rec insert_cell_rec n str cell = function
-    | Node_dt (h, l) :: t -> (
-        let cv, hv = (get_cell_value cell, get_cell_value h) in
-        match hv > cv with 
-        | true -> insert_str_tree_rec (n + 1) str (Leaf_dt cell) :: Node_dt (h, l) :: t
+let rm_vl (dtf : 'a trie)  (vl : 'a list) : 'a trie = 
+  let rec rrm (tl : 'a dtree list) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : 'a) (vlt : 'a list) : 'a dtree list * int list option = 
+    match tl with 
+    | Node_dt (c, stl) :: tlt -> (
+      match vlh = c with 
+      | true -> (
+        match vlt = [] with 
+        | true -> assert false 
         | false ->
-            match hv == cv with 
-            | true -> (
-                match h with
-                | Cell _ ->
-                  insert_str_tree_rec (n + 1) str (Node_dt (cell, l)) :: t
-                | ECell c ->
-                  insert_str_tree_rec (n + 1) str (Node_dt (ECell c, l)) :: t)
-            | false -> Node_dt (h, l) :: insert_cell_rec n str cell t)
-    | Leaf_dt h :: t -> (
-        let cv, hv = (get_cell_value cell, get_cell_value h) in
-        match hv > cv with 
-        | true -> insert_str_tree_rec (n + 1) str (Leaf_dt cell) :: Leaf_dt h :: t
+          match List.length stl > 1 with 
+          | true -> (
+            match rrm stl ~ptd:(ptd @ acc @ [n]) (List.hd vlt) (List.tl vlt) with 
+            | nstl, Some nptd -> Node_dt (c, nstl) :: tlt, Some nptd
+            | nstl, None -> Node_dt (c, nstl) :: tlt, None
+          )
+          | false -> 
+            match rrm stl ~ptd ~acc:(acc @ [n]) (List.hd vlt) (List.tl vlt) with 
+            | nstl, Some nptd -> Node_dt (c, nstl) :: tlt, Some nptd
+            | nstl, None -> Node_dt (c, nstl) :: tlt, None
+      )
+      | false -> 
+        match vlh > c with 
+        | true -> rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt 
+        | false -> assert false 
+    )
+    | ENode_dt (c, stl) :: tlt -> (
+      match vlh = c with 
+      | true -> ( 
+        match vlt = [] with 
+        | true -> ( 
+          Node_dt (c, stl) :: tlt, Some (ptd @ acc @ [n])
+        )
         | false ->
-            match hv == cv with 
-            | true -> (
-                match h with
-                | Cell _ ->
-                  insert_str_tree_rec (n + 1) str (Leaf_dt cell) :: t
-                | ECell c ->
-                  insert_str_tree_rec (n + 1) str (Leaf_dt (ECell c)) :: t)
-            | false -> Leaf_dt h :: insert_cell_rec n str cell t)
-    | [] ->
-        [insert_str_tree_rec (n + 1) str (Leaf_dt cell)]
-  and inter n str cell = function
-    | Node_dt (h, l) ->
-      Node_dt (h, insert_cell_rec n str cell l)
-    | Leaf_dt h ->
-      Node_dt (h, insert_cell_rec n str cell [])
-  and insert_str_tree_rec n str t_tree =
-    let len = String.length str in
-    match n with
-    | n when n >= len ->
-      t_tree
-    | _ ->
-      let cell = if n = len - 1 then ECell str.[n] else Cell str.[n] in
-      inter n str cell t_tree
-  in
-  match String.length str = 0 with 
-  | true -> t_tree
-  | false -> (
-      assert (str.[0] = get_tree_head t_tree) ;
-      insert_str_tree_rec 1 str t_tree )
+          match List.length stl > 1 with 
+          | true -> (
+            match rrm stl ~ptd:(ptd @ acc @ [n]) (List.hd vlt) (List.tl vlt) with
+            | nstl, Some nptd -> ENode_dt (c, nstl) :: tlt, Some nptd
+            | nstl, None -> Node_dt (c, nstl) :: tlt, None
+          )
+          | false ->  
+            match rrm stl ~ptd ~acc:(acc @ [n]) (List.hd vlt) (List.tl vlt) with 
+            | nstl, Some nptd -> Node_dt (c, nstl) :: tlt, Some nptd
+            | nstl, None -> Node_dt (c, nstl) :: tlt, None
+      )
+      | false -> 
+        match vlh > c with 
+        | true -> rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt 
+        | false -> assert false 
+    )
+    | Leaf_dt c :: tlt -> (
+      match vlh = c with 
+      | true -> ( 
+        match vlt = [] with 
+        | true -> tlt, None
+        | false -> assert false 
+      )
+      | false -> 
+        match vlh > c with 
+        | true -> rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt 
+        | false -> assert false 
+    )
+    | [] -> assert false 
+  in 
+    match dtf, vl with 
+    | Trie trl, vlh::vlt -> Trie (fst (rrm trl vlh vlt))
+    | _ -> dtf
+
+
 
 (**)
 
-(**)
-let insert_str str tforest =
-  let rec insert_rec c str treelist =
-    match String.length str = 1 with
-    | true -> (
-        match treelist with
-        | Leaf_dt cell :: t when get_cell_value cell = c ->
-          Leaf_dt (ECell c) :: t
-        | Node_dt (cell, l) :: t when get_cell_value cell = c ->
-          Node_dt (ECell c, l) :: t
-        | h :: t when get_tree_head h < c ->
-          h :: insert_rec c str t
-        | h :: t when get_tree_head h > c ->
-          Leaf_dt (ECell c) :: h :: t
-        | [] ->
-          [Leaf_dt (ECell c)]
-        | _ ->
-          assert false)
-    | false -> (
-        match treelist with
-        | h :: t when get_tree_head h = c ->
-          insert_str_tree str h :: t
-        | h :: t when get_tree_head h < c ->
-          h :: insert_rec c str t
-        | h :: t when get_tree_head h > c ->
-          insert_str_tree str (Leaf_dt (Cell c)) :: h :: t
-        | [] ->
-          [insert_str_tree str (Leaf_dt (Cell c))]
-        | _ ->
-          assert false)
-  in
-  match tforest with
-  | Trie l ->
-    match String.length str > 0 with 
-    | true -> Trie (insert_rec str.[0] str l) 
-    | false -> Trie l
-
-(**)
-
-let strl_to_trie ?(dtf = Trie []) strl = List.fold_right insert_str strl dtf
-
-(**)
-
-let mem_str str trie =
-  let rec mem_str_rec n str tree =
-    match String.length str - 1 = n with 
-    | true -> (
-        match tree with
-        | Node_dt (ECell c, _) when str.[n] = c ->
-          true
-        | Leaf_dt (ECell c) when str.[n] = c ->
-          true
-        | _ ->
-          false)
-    | false -> (
-        match tree with
-        | Node_dt (c, l) when str.[n] = get_cell_value c -> (
-            match get_tree_from_tl str.[n + 1] l with
-            | Some x ->
-              mem_str_rec (n + 1) str x
-            | None ->
-              false )
-        | _ ->
-          false)
-  in
-  match String.length str = 0 with 
-  | true -> true 
-  | false ->
-    match get_tree str.[0] trie with
-    | Some x ->
-      mem_str_rec 0 str x
-    | None ->
-      false
-
-(**)
-
-let rec rm_elem elem = function
-  | h :: t when h = elem ->
-    t
-  | h :: t ->
-    h :: rm_elem elem t
-  | [] ->
-    []
-
-(**)
 
 (* Given a list of elements (the pool) and a trie 
  * Returns a list of every possible combination from the trie *)
@@ -251,27 +177,25 @@ let get_combs pool trie =
     match uniq with
     | h :: t -> (
         match tree with
-        | Node_dt (_, l) -> (
+        | Node_dt (_, l) | ENode_dt (_, l) -> (
             match get_tree_from_tl h l with
-            | Some (Node_dt (ECell _, _) as subtree) ->
+            | Some (ENode_dt (_, _) as subtree) ->
               let new_pool = rm_elem h pool in
               let new_uniq = List.sort_uniq compare new_pool in
               List.rev (h :: pref)
               :: rec_on_tree new_pool subtree (h :: pref) new_uniq
               @ rec_on_tree pool tree pref t
-            | Some (Node_dt (Cell _, _) as subtree) ->
+            | Some (Node_dt (_, _) as subtree) ->
               let new_pool = rm_elem h pool in
               let new_uniq = List.sort_uniq compare new_pool in
               rec_on_tree new_pool subtree (h :: pref) new_uniq
               @ rec_on_tree pool tree pref t
-            | Some (Leaf_dt (ECell _)) ->
+            | Some (Leaf_dt _) ->
               List.rev (h :: pref) :: rec_on_tree pool tree pref t
             | _ ->
               rec_on_tree pool tree pref t )
-        | Leaf_dt (ECell _) ->
-          [List.rev pref]
-        | Leaf_dt (Cell _) ->
-          assert false )
+        | Leaf_dt _ ->
+          [List.rev pref] )
     | [] ->
       []
   in
@@ -279,9 +203,9 @@ let get_combs pool trie =
     match uniq with
     | h :: t -> (
         match get_tree_from_tl h treelist with
-        | Some (Leaf_dt (ECell _)) ->
+        | Some (Leaf_dt _) ->
           [h] :: rec_on_treelist pool treelist t
-        | Some (Node_dt (ECell _, _) as tree) ->
+        | Some (ENode_dt (_, _) as tree) ->
           let new_pool = rm_elem h pool in
           let new_uniq = List.sort_uniq compare new_pool in
           ([h] :: rec_on_tree new_pool tree [h] new_uniq)
@@ -297,8 +221,7 @@ let get_combs pool trie =
       []
   in
   match trie with
-  | Trie [] ->
-    []
+  | Trie [] -> []
   | Trie l ->
     let uniq = List.sort_uniq compare pool in
     rec_on_treelist pool l uniq
