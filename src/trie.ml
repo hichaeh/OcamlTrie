@@ -39,29 +39,6 @@ module Make (V : OrderedType) =
       | _ -> false 
     (**)
 
-    let rec get_tree_from_tl (v: v) (dtl: t) : tt option = 
-      match dtl with
-      | h :: t -> (
-          match h with Node_dt (c, _) | ENode_dt (c, _) | Leaf_dt c ->  
-          match V.compare v c = 0 with 
-          | true -> Some h
-          | false ->
-            match V.compare v c = 1 with 
-            | true -> get_tree_from_tl v t
-            | false -> None )
-      | _ -> None 
-    (**)
-
-    let rec rm_elem elem = function
-      | h :: t -> (
-          match V.compare h elem = 0 with 
-          | true -> t
-          | false -> h :: rm_elem elem t
-        )
-      | [] -> []
-    (**)
-
-
     let add (dtf : t) (vlist : v list) : t =
       let rec radd (tl : t) (vlh : v) (vlt : v list) =
         match tl with
@@ -250,6 +227,26 @@ module Make (V : OrderedType) =
 
 
     let get_combs (dtf : t ) (pool : v list) =
+      let rec rm_elem elem = function
+        | h :: t -> (
+            match V.compare h elem = 0 with 
+            | true -> t
+            | false -> h :: rm_elem elem t
+          )
+        | [] -> []
+      in
+      let rec get_tree_from_tl (v: v) (dtl: t) : tt option = 
+        match dtl with
+        | h :: t -> (
+            match h with Node_dt (c, _) | ENode_dt (c, _) | Leaf_dt c ->  
+            match V.compare v c = 0 with 
+            | true -> Some h
+            | false ->
+              match V.compare v c = 1 with 
+              | true -> get_tree_from_tl v t
+              | false -> None )
+        | _ -> None 
+      in
       let rec rec_on_tree pool tree pref uniq =
         match uniq with
         | h :: t -> (
