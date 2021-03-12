@@ -47,7 +47,7 @@ module Make (V : OrderedType) =
           | true -> Some h
           | false ->
             match v > c with 
-            | true -> get_tree_from_tl c t
+            | true -> get_tree_from_tl v t
             | false -> None )
       | _ -> None 
     (**)
