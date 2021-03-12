@@ -43,10 +43,10 @@ module Make (V : OrderedType) =
       match dtl with
       | h :: t -> (
           match h with Node_dt (c, _) | ENode_dt (c, _) | Leaf_dt c ->  
-          match v = c with 
+          match V.compare v c = 0 with 
           | true -> Some h
           | false ->
-            match v > c with 
+            match V.compare v c = 1 with 
             | true -> get_tree_from_tl v t
             | false -> None )
       | _ -> None 
@@ -54,7 +54,7 @@ module Make (V : OrderedType) =
 
     let rec rm_elem elem = function
       | h :: t -> (
-          match h = elem with 
+          match V.compare h elem = 0 with 
           | true -> t
           | false -> h :: rm_elem elem t
         )
@@ -66,36 +66,50 @@ module Make (V : OrderedType) =
       let rec radd (tl : t) (vlh : v) (vlt : v list) =
         match tl with
         | Node_dt (cv, stl) :: tlt -> (
-            match vlh > cv with 
+            match V.compare vlh cv = 1 with 
             | true -> Node_dt (cv, stl) :: radd tlt vlh vlt
             | false -> 
-              match vlh = cv, vlt = [] with 
-              | true, true -> ENode_dt (vlh, stl) :: tlt
-              | true, false -> Node_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
-              | false, true -> Leaf_dt (vlh) :: tl
-              | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl)
+              match V.compare vlh cv = 0, vlt = [] with 
+              | true, true ->
+                ENode_dt (vlh, stl) :: tlt
+              | true, false -> 
+                Node_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
+              | false, true -> 
+                Leaf_dt (vlh) :: tl
+              | false, false -> 
+                Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl)
         | ENode_dt (cv, stl) :: tlt  -> (
-            match vlh > cv with 
+            match V.compare vlh cv = 1 with 
             | true -> ENode_dt (cv, stl) :: radd tlt vlh vlt
             | false -> 
-              match vlh = cv, vlt = [] with 
-              | true, true -> ENode_dt (vlh, stl) :: tlt
-              | true, false -> ENode_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
-              | false, true -> Leaf_dt (vlh) :: tl
-              | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl )
+              match V.compare vlh cv = 0, vlt = [] with 
+              | true, true -> 
+                ENode_dt (vlh, stl) :: tlt
+              | true, false -> 
+                ENode_dt (cv, radd stl (List.hd vlt) (List.tl vlt)) :: tlt
+              | false, true -> 
+                Leaf_dt (vlh) :: tl
+              | false, false -> 
+                Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl )
         | Leaf_dt cv :: tlt -> (
-            match vlh > cv with 
+            match V.compare vlh cv = 1 with 
             | true -> Leaf_dt cv :: radd tlt vlh vlt
             | false ->
-              match vlh = cv, vlt = [] with 
-              | true, true -> Leaf_dt (vlh) :: tlt
-              | true, false -> ENode_dt (cv, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
-              | false, true -> Leaf_dt (vlh) :: tl
-              | false, false -> Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl )
+              match V.compare vlh cv = 0, vlt = [] with 
+              | true, true -> 
+                Leaf_dt (vlh) :: tlt
+              | true, false -> 
+                ENode_dt (cv, radd [] (List.hd vlt) (List.tl vlt)) :: tlt
+              | false, true -> 
+                Leaf_dt (vlh) :: tl
+              | false, false -> 
+                Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt)) :: tl )
         | [] -> 
           match vlt = [] with
-          | true -> [Leaf_dt (vlh)]
-          | false -> [Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt))]
+          | true -> 
+            [Leaf_dt (vlh)]
+          | false -> 
+            [Node_dt (vlh, radd [] (List.hd vlt) (List.tl vlt))]
       in
       match vlist with 
       | vlh :: vlt -> radd dtf vlh vlt
@@ -107,17 +121,17 @@ module Make (V : OrderedType) =
       let rec rmem (tl : t) (vlh : v) (vlt : v list) : bool =  
         match tl with 
         | Node_dt (c, stl) :: tlt -> (
-            match c = vlh with
+            match V.compare c vlh = 0 with
             | true -> (
                 match vlt with
                 | h :: t -> rmem stl h t
                 | [] -> false)
             | false ->
-              match vlh > c with
+              match V.compare vlh c = 1 with
               | true -> rmem tlt vlh vlt
               | false -> false)
         | ENode_dt (c, stl) :: tlt -> (
-            match c = vlh with 
+            match V.compare c vlh = 0 with 
             | true -> (
                 match vlt with
                 | h :: t -> rmem stl h t
@@ -127,13 +141,13 @@ module Make (V : OrderedType) =
               | true -> rmem tlt vlh vlt
               | false -> false) 
         | Leaf_dt c :: tlt -> (
-            match c = vlh with 
+            match V.compare c vlh = 0 with 
             | true -> (
                 match vlt with
                 | [] -> true
                 | _ -> false)
             | false -> 
-              match vlh > c with
+              match V.compare vlh c = 1 with
               | true -> rmem tlt vlh vlt
               | false -> false) 
         | [] -> false 
@@ -147,7 +161,7 @@ module Make (V : OrderedType) =
       let rec rrm (tl : t) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : v) (vlt : v list) : t * int list option = 
         match tl with 
         | Node_dt (c, stl) :: tlt -> (
-            match vlh = c with 
+            match V.compare vlh c = 0 with 
             | true -> (
                 match vlt = [] with 
                 | true -> assert false 
@@ -171,7 +185,7 @@ module Make (V : OrderedType) =
                     | nstl, None -> Node_dt (c, nstl) :: tlt, None
               )
             | false -> 
-              match vlh > c with 
+              match V.compare vlh c = 1 with 
               | true -> ( 
                 match rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt
                 with nstl, npdt -> Node_dt (c, stl) :: nstl, npdt
@@ -179,7 +193,7 @@ module Make (V : OrderedType) =
               | false -> assert false 
           )
         | ENode_dt (c, stl) :: tlt -> (
-            match vlh = c with 
+            match V.compare vlh c = 0 with 
             | true -> ( 
                 match vlt = [] with 
                 | true -> ( 
@@ -205,7 +219,7 @@ module Make (V : OrderedType) =
                     | nstl, None -> Node_dt (c, nstl) :: tlt, None
               )
             | false -> 
-              match vlh > c with 
+              match V.compare vlh c = 1 with 
               | true -> (
               match rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt
               with nstl, npdt -> ENode_dt (c, stl) :: nstl, npdt
@@ -213,14 +227,14 @@ module Make (V : OrderedType) =
               | false -> assert false 
           )
         | Leaf_dt c :: tlt -> (
-            match vlh = c with 
+            match V.compare vlh c = 0 with 
             | true -> ( 
                 match vlt = [] with 
                 | true -> tlt, None
                 | false -> assert false 
               )
             | false -> 
-              match vlh > c with 
+              match V.compare vlh c = 1 with
               | true -> (
                 match rrm tlt ~n:(n + 1) ~ptd ~acc vlh vlt
                 with nstl, npdt -> Leaf_dt c :: nstl, npdt
@@ -235,7 +249,6 @@ module Make (V : OrderedType) =
     (**)
 
 
-
     let get_combs (dtf : t ) (pool : v list) =
       let rec rec_on_tree pool tree pref uniq =
         match uniq with
@@ -243,16 +256,16 @@ module Make (V : OrderedType) =
             match tree with
             | Node_dt (_, l) | ENode_dt (_, l) -> (
                 match get_tree_from_tl h l with
-                | Some (ENode_dt (_, _) as subtree) ->
-                  let new_pool = rm_elem h pool in
-                  let new_uniq = List.sort_uniq compare new_pool in
+                | Some (ENode_dt (_, _) as st) ->
+                  let npool = rm_elem h pool in
+                  let nuniq = List.sort_uniq compare npool in
                   List.rev (h :: pref)
-                  :: rec_on_tree new_pool subtree (h :: pref) new_uniq
+                  :: rec_on_tree npool st (h :: pref) nuniq
                   @ rec_on_tree pool tree pref t
-                | Some (Node_dt (_, _) as subtree) ->
-                  let new_pool = rm_elem h pool in
-                  let new_uniq = List.sort_uniq compare new_pool in
-                  rec_on_tree new_pool subtree (h :: pref) new_uniq
+                | Some (Node_dt (_, _) as st) ->
+                  let npool = rm_elem h pool in
+                  let nuniq = List.sort_uniq compare npool in
+                  rec_on_tree npool st (h :: pref) nuniq
                   @ rec_on_tree pool tree pref t
                 | Some (Leaf_dt _) ->
                   List.rev (h :: pref) :: rec_on_tree pool tree pref t
@@ -263,24 +276,24 @@ module Make (V : OrderedType) =
         | [] ->
           []
       in
-      let rec rec_on_treelist pool treelist uniq =
+      let rec rec_on_treelist pool trl uniq =
         match uniq with
         | h :: t -> (
-            match get_tree_from_tl h treelist with
+            match get_tree_from_tl h trl with
             | Some (Leaf_dt _) ->
-              [h] :: rec_on_treelist pool treelist t
+              [h] :: rec_on_treelist pool trl t
             | Some (ENode_dt (_, _) as tree) ->
-              let new_pool = rm_elem h pool in
-              let new_uniq = List.sort_uniq compare new_pool in
-              ([h] :: rec_on_tree new_pool tree [h] new_uniq)
-              @ rec_on_treelist pool treelist t
+              let npool = rm_elem h pool in
+              let nuniq = List.sort_uniq compare npool in
+              ([h] :: rec_on_tree npool tree [h] nuniq)
+              @ rec_on_treelist pool trl t
             | Some tree ->
-              let new_pool = rm_elem h pool in
-              let new_uniq = List.sort_uniq compare new_pool in
-              rec_on_tree new_pool tree [h] new_uniq
-              @ rec_on_treelist pool treelist t
+              let npool = rm_elem h pool in
+              let nuniq = List.sort_uniq compare npool in
+              rec_on_tree npool tree [h] nuniq
+              @ rec_on_treelist pool trl t
             | None ->
-              rec_on_treelist pool treelist t )
+              rec_on_treelist pool trl t )
         | [] ->
           []
       in
