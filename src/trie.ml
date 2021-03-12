@@ -11,9 +11,9 @@ module type T = sig
   val empty : t
   val is_empty : t -> bool
   val add : t -> v list -> t
-  val mem : t -> v list -> bool
   val rm : t -> v list -> t
-  (* val is_subtree : t -> t -> bool *)
+  val mem : t -> v list -> bool
+  val is_subtree : t -> t -> bool
   (* val update : t -> v list -> v list -> t *)
   val get_combs : t -> v list -> (v list) list 
 end
@@ -24,20 +24,18 @@ module Make (V : OrderedType) =
     type v = V.t
 
     type tt =
-      | ENode_dt of v * tt list
       | Node_dt of v * tt list
+      | ENode_dt of v * tt list
       | Leaf_dt of v
       (**)
 
     type t = tt list
 
     let empty : tt list = []
-
     let is_empty (dtf : t) : bool = 
       match dtf with 
       | [] -> true 
       | _ -> false 
-    (**)
 
     let add (dtf : t) (vlist : v list) : t =
       let rec radd (tl : t) (vlh : v) (vlt : v list) =
@@ -91,48 +89,6 @@ module Make (V : OrderedType) =
       match vlist with 
       | vlh :: vlt -> radd dtf vlh vlt
       | _ -> dtf 
-    (**)
-
-
-    let mem (dtf : t) (vl : v list) : bool =
-      let rec rmem (tl : t) (vlh : v) (vlt : v list) : bool =  
-        match tl with 
-        | Node_dt (c, stl) :: tlt -> (
-            match V.compare c vlh = 0 with
-            | true -> (
-                match vlt with
-                | h :: t -> rmem stl h t
-                | [] -> false)
-            | false ->
-              match V.compare vlh c = 1 with
-              | true -> rmem tlt vlh vlt
-              | false -> false)
-        | ENode_dt (c, stl) :: tlt -> (
-            match V.compare c vlh = 0 with 
-            | true -> (
-                match vlt with
-                | h :: t -> rmem stl h t
-                | [] -> true)
-            | false -> 
-              match vlh > c with
-              | true -> rmem tlt vlh vlt
-              | false -> false) 
-        | Leaf_dt c :: tlt -> (
-            match V.compare c vlh = 0 with 
-            | true -> (
-                match vlt with
-                | [] -> true
-                | _ -> false)
-            | false -> 
-              match V.compare vlh c = 1 with
-              | true -> rmem tlt vlh vlt
-              | false -> false) 
-        | [] -> false 
-      in 
-      match vl with
-      | h :: t -> rmem dtf h t
-      | _ -> true
-    (**)
 
     let rm (dtf : t)  (vl : v list) : t = 
       let rec rrm (tl : t) ?(n = 0) ?(ptd = []) ?(acc = []) (vlh : v) (vlt : v list) : t * int list option = 
@@ -223,9 +179,72 @@ module Make (V : OrderedType) =
       match vl with 
       | vlh::vlt -> (fst (rrm dtf vlh vlt))
       | _ -> dtf
-    (**)
 
+    let mem (dtf : t) (vl : v list) : bool =
+      let rec rmem (tl : t) (vlh : v) (vlt : v list) : bool =  
+        match tl with 
+        | Node_dt (c, stl) :: tlt -> (
+            match V.compare c vlh = 0 with
+            | true -> (
+                match vlt with
+                | h :: t -> rmem stl h t
+                | [] -> false)
+            | false ->
+              match V.compare vlh c = 1 with
+              | true -> rmem tlt vlh vlt
+              | false -> false)
+        | ENode_dt (c, stl) :: tlt -> (
+            match V.compare c vlh = 0 with 
+            | true -> (
+                match vlt with
+                | h :: t -> rmem stl h t
+                | [] -> true)
+            | false -> 
+              match vlh > c with
+              | true -> rmem tlt vlh vlt
+              | false -> false) 
+        | Leaf_dt c :: tlt -> (
+            match V.compare c vlh = 0 with 
+            | true -> (
+                match vlt with
+                | [] -> true
+                | _ -> false)
+            | false -> 
+              match V.compare vlh c = 1 with
+              | true -> rmem tlt vlh vlt
+              | false -> false) 
+        | [] -> false 
+      in 
+      match vl with
+      | h :: t -> rmem dtf h t
+      | _ -> true
 
+    let rec is_subtree (f1: t) (f2: t) : bool = 
+      let gvft (tree : tt) : v =
+        match tree with 
+        | Node_dt (c, _) -> c
+        | ENode_dt (c, _) -> c
+        | Leaf_dt c -> c
+      in
+      match f1, f2 with
+      | h1 :: tl1, h2 :: tl2 -> (
+        let v1, v2 = gvft h1, gvft h2 in 
+        match V.compare v1 v2 = 1 with 
+        | true -> is_subtree f1 tl2
+        | false -> 
+          match V.compare v2 v1 = 1 with
+          | true -> false 
+          | false -> 
+            match h1, h2 with 
+            | Node_dt (_, stl1), (Node_dt (_, stl2) | ENode_dt (_, stl2))
+            | ENode_dt (_, stl1), ENode_dt (_, stl2) ->
+              is_subtree stl1 stl2 && is_subtree tl1 tl2
+            | Leaf_dt _, (Leaf_dt _ | ENode_dt _) -> true 
+            | _ -> false) 
+      | [], _ -> true
+      | _ -> false  
+
+    
     let get_combs (dtf : t ) (pool : v list) =
       let rec rm_elem elem = function
         | h :: t -> (
