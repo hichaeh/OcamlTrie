@@ -13,8 +13,7 @@ module type T = sig
   val add : t -> v list -> t
   val rm : t -> v list -> t
   val mem : t -> v list -> bool
-  val is_subtree : t -> t -> bool
-  (* val update : t -> v list -> v list -> t *)
+  val is_subtrie : t -> t -> bool
   val get_combs : t -> v list -> (v list) list 
 end
 
@@ -219,7 +218,7 @@ module Make (V : OrderedType) =
       | h :: t -> rmem dtf h t
       | _ -> true
 
-    let rec is_subtree (f1: t) (f2: t) : bool = 
+    let rec is_subtrie (f1: t) (f2: t) : bool = 
       let gvft (tree : tt) : v =
         match tree with 
         | Node_dt (c, _) -> c
@@ -230,7 +229,7 @@ module Make (V : OrderedType) =
       | h1 :: tl1, h2 :: tl2 -> (
         let v1, v2 = gvft h1, gvft h2 in 
         match V.compare v1 v2 = 1 with 
-        | true -> is_subtree f1 tl2
+        | true -> is_subtrie f1 tl2
         | false -> 
           match V.compare v2 v1 = 1 with
           | true -> false 
@@ -238,7 +237,7 @@ module Make (V : OrderedType) =
             match h1, h2 with 
             | Node_dt (_, stl1), (Node_dt (_, stl2) | ENode_dt (_, stl2))
             | ENode_dt (_, stl1), ENode_dt (_, stl2) ->
-              is_subtree stl1 stl2 && is_subtree tl1 tl2
+              is_subtrie stl1 stl2 && is_subtrie tl1 tl2
             | Leaf_dt _, (Leaf_dt _ | ENode_dt _) -> true 
             | _ -> false) 
       | [], _ -> true

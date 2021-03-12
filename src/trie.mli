@@ -14,8 +14,7 @@ module type T =
     val add : t -> v list -> t
     val rm : t -> v list -> t
     val mem : t -> v list -> bool
-    val is_subtree : t -> t -> bool
-    (* val update : t -> v list -> v list -> t *)
+    val is_subtrie : t -> t -> bool
     val get_combs : t -> v list -> (v list) list 
   end
 
