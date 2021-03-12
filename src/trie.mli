@@ -9,7 +9,7 @@ module type T =
   sig
     type v 
     type t 
-    val empty : unit -> t
+    val empty : t
     val is_empty : t -> bool
     val add : t -> v list -> t
     val mem : t -> v list -> bool
