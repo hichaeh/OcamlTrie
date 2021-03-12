@@ -26,7 +26,6 @@ module Make (V : OrderedType) =
       | Node_dt of v * tt list
       | ENode_dt of v * tt list
       | Leaf_dt of v
-      (**)
 
     type t = tt list
 
@@ -242,7 +241,6 @@ module Make (V : OrderedType) =
             | _ -> false) 
       | [], _ -> true
       | _ -> false  
-
     
     let get_combs (dtf : t ) (pool : v list) =
       let rec rm_elem elem = function
@@ -314,6 +312,5 @@ module Make (V : OrderedType) =
       in
       let uniq = List.sort_uniq compare pool in
       rec_on_treelist pool dtf uniq
-      (**)
 
   end)

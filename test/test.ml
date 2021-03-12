@@ -2,28 +2,28 @@ module CharTrie = Trie.Make(Char)
 
 
 let _ = 
-  let dtf = CharTrie.empty in 
-  let dtf = CharTrie.add dtf ['a'; 'b'; 'c'] in 
+ (* *)
+  let dtf = CharTrie.add (CharTrie.add CharTrie.empty ['b'; 'c']) ['a'; 'b'] in 
   Printf.printf "%b\n" (CharTrie.mem dtf ['a'; 'b'; 'c']);
-  Printf.printf "%b\n" (CharTrie.mem dtf ['a'; 'b']);
   Printf.printf "%b\n" (CharTrie.mem dtf ['a']);
-  Printf.printf "%b\n" (CharTrie.mem dtf ['a'; 'c']);
+  Printf.printf "%b\n" (CharTrie.mem dtf ['a'; 'b']);
+  Printf.printf "%b\n" (CharTrie.mem dtf ['b'; 'c']);
 
-(*
-module CharTrie = Make(Char);;
+  let x = CharTrie.add CharTrie.empty ['a'; 'b'; 'c'] in 
+  let y = CharTrie.add x ['a';'b'] in 
+  let z = CharTrie.add (CharTrie.add x ['a';'b';'c';'d']) ['b';'a'] in
 
-let dtf = CharTrie.empty;;
+  assert(CharTrie.mem x ['a'; 'b'; 'c']);
+  
+  assert(CharTrie.mem y ['a'; 'b'; 'c']);
+  assert(CharTrie.mem y ['a'; 'b']);
+  
+  assert(CharTrie.mem z ['a'; 'b'; 'c'; 'd']);
+  assert(CharTrie.mem z ['a'; 'b'; 'c']);
+  assert(not @@ CharTrie.mem z ['a'; 'b']);
+  
+  assert(CharTrie.is_subtrie x z);
+  assert(CharTrie.is_subtrie (CharTrie.add x ['b';'a']) z);
+  assert(not @@ CharTrie.is_subtrie y z);
 
-let x = CharTrie.add dtf ['a'; 'b'; 'c'];;
-let y = CharTrie.add (CharTrie.add dtf ['a'; 'b'; 'c']) ['a';'b'];;
-let z = CharTrie.add (CharTrie.add (CharTrie.add dtf ['a'; 'b'; 'c']) ['a';'b';'c';'d']) ['b';'a'];;
-
-CharTrie.mem x ['a'; 'b'; 'c'];;
-
-CharTrie.mem y ['a'; 'b'; 'c'];;
-CharTrie.mem y ['a'; 'b'];;
-
-CharTrie.mem z ['a'; 'b'; 'c'; 'd'];;
-CharTrie.mem z ['a'; 'b'; 'c'];;
-CharTrie.mem z ['a'; 'b'];;
-*)
+  Printf.printf "Tests : ok\n"
